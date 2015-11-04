@@ -23,9 +23,10 @@ public class Main {
         stmt.execute();
     }
 
-    public static ArrayList<Event> selectEvents(Connection conn) throws SQLException {
+    public static ArrayList<Event> selectEvents(Connection conn, boolean isAsc) throws SQLException {
         ArrayList<Event> events = new ArrayList<>();
-        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM events");
+        String query = String.format("SELECT * FROM events ORDER BY start_date %s", isAsc? "ASC" : "DESC"); //left would mean true, "DESC" would mean false
+        PreparedStatement stmt = conn.prepareStatement(query);
         ResultSet results = stmt.executeQuery();
         while (results.next()) {
             Event event = new Event();
@@ -37,6 +38,10 @@ public class Main {
         return events;
     }
 
+    public static ArrayList<Event> selectEvents(Connection conn) throws SQLException {
+        return selectEvents(conn, true); //if we dont specify "isAsc" then it will default to true
+    }
+
     public static void main(String[] args) throws SQLException {
         Connection conn = DriverManager.getConnection("jdbc:h2:./main");
         createTables(conn);
@@ -44,10 +49,15 @@ public class Main {
         Spark.get(
                 "/",
                 (request, response) -> {
+                    //to get ASC and DESC links to work from events.html
+                    String isAscStr = request.queryParams("isAsc");
+                    boolean isAsc = isAscStr != null && isAscStr.equals("true");
+
                     HashMap m = new HashMap();
                     //preset today's time and date
                     m.put("now", LocalDateTime.now());
-                    m.put("events", selectEvents(conn));
+                    m.put("events", selectEvents(conn, isAsc));
+                    m.put("isAsc", isAsc); //by default it will show in descending order
                     return new ModelAndView(m, "events.html");
                 },
                 new MustacheTemplateEngine()

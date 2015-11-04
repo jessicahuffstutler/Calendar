@@ -5,7 +5,19 @@
     <input type="datetime-local" value="{{now}}" name="startDate" />
     <button type="submit">Submit</button>
 </form>
+
 <br>
+
+{{#isAsc}}
+<a href="/?isASC=false">Show in Descending Order</a>
+{{/isAsc}}
+
+{{^isAsc}}
+<a href="/?isAsc=true">Show in Ascending Order</a>
+{{/isAsc}}
+
+<br>
+
 {{#events}}
 {{description}} {{startDate}} <br>
 {{/events}}
