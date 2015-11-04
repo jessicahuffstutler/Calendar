@@ -11,6 +11,8 @@ import java.util.HashMap;
 
 public class Main {
 
+    static final int SHOW_COUNT = 5; //5 per page
+
     public static void createTables(Connection conn) throws SQLException {
         Statement stmt = conn.createStatement();
         stmt.execute("CREATE TABLE IF NOT EXISTS events (id IDENTITY, description VARCHAR, start_date TIMESTAMP)");
@@ -23,10 +25,12 @@ public class Main {
         stmt.execute();
     }
 
-    public static ArrayList<Event> selectEvents(Connection conn, boolean isAsc) throws SQLException {
+    public static ArrayList<Event> selectEvents(Connection conn, boolean isAsc, int offset) throws SQLException {
         ArrayList<Event> events = new ArrayList<>();
-        String query = String.format("SELECT * FROM events ORDER BY start_date %s", isAsc? "ASC" : "DESC"); //left would mean true, "DESC" would mean false
+        String query = String.format("SELECT * FROM events ORDER BY start_date %s LIMIT ? OFFSET ?", isAsc? "ASC" : "DESC"); //left would mean true, "DESC" would mean false
         PreparedStatement stmt = conn.prepareStatement(query);
+        stmt.setInt(1, SHOW_COUNT);
+        stmt.setInt(2, offset);
         ResultSet results = stmt.executeQuery();
         while (results.next()) {
             Event event = new Event();
@@ -39,7 +43,7 @@ public class Main {
     }
 
     public static ArrayList<Event> selectEvents(Connection conn) throws SQLException {
-        return selectEvents(conn, true); //if we dont specify "isAsc" then it will default to true
+        return selectEvents(conn, true, 0); //if we dont specify "isAsc" then it will default to true
     }
 
     public static void main(String[] args) throws SQLException {
@@ -53,11 +57,20 @@ public class Main {
                     String isAscStr = request.queryParams("isAsc");
                     boolean isAsc = isAscStr != null && isAscStr.equals("true");
 
+                    String offsetStr = request.queryParams("offset");
+                    int offset = 0;
+                    try {
+                        offset = Integer.valueOf(offsetStr);
+                    } catch (Exception e) {
+
+                    }
+
                     HashMap m = new HashMap();
                     //preset today's time and date
                     m.put("now", LocalDateTime.now());
-                    m.put("events", selectEvents(conn, isAsc));
+                    m.put("events", selectEvents(conn, isAsc, offset));
                     m.put("isAsc", isAsc); //by default it will show in descending order
+                    m.put("nextOffset", offset + SHOW_COUNT);
                     return new ModelAndView(m, "events.html");
                 },
                 new MustacheTemplateEngine()
