@@ -1,0 +1,13 @@
+<html>
+<body>
+<form action="create-event" method="post">
+    <input type="test" placeholder="Describe com.theironyard.Event" name="description" />
+    <input type="datetime-local" value="{{now}}" name="startDate" />
+    <button type="submit">Submit</button>
+</form>
+<br>
+{{#events}}
+{{description}} {{startDate}} <br>
+{{/events}}
+</body>
+</html>
